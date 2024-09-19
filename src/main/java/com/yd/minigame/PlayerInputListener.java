@@ -1,14 +1,12 @@
 package com.yd.minigame;
 
-import org.bukkit.Location;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerToggleSneakEvent;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.EventHandler;
+import org.bukkit.entity.Player;
+import org.bukkit.Location;
+import org.bukkit.util.Vector;
 
 public class PlayerInputListener implements Listener {
 
@@ -18,7 +16,6 @@ public class PlayerInputListener implements Listener {
         this.plugin = plugin;
     }
 
-    // 플레이어 움직임 감지 및 키 입력 처리
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
@@ -26,89 +23,130 @@ public class PlayerInputListener implements Listener {
             Location from = event.getFrom();
             Location to = event.getTo();
 
-            // 움직임이 없는 경우 무시
-            if (from.getX() == to.getX() && from.getZ() == to.getZ()) {
+            // 위치 변화 확인 (Yaw와 Pitch 제외)
+            if (from.getX() == to.getX() && from.getY() == to.getY() && from.getZ() == to.getZ()) {
                 return;
             }
-
-            // 플레이어를 원래 위치로 되돌립니다.
-            event.setTo(from);
 
             // 움직임의 방향을 계산합니다.
             double deltaX = to.getX() - from.getX();
             double deltaZ = to.getZ() - from.getZ();
 
-            String inputKey = getMovementKey(deltaX, deltaZ);
+            // 움직임 이벤트 취소
+            event.setCancelled(true);
+
+            String inputKey = getMovementKey(player, deltaX, deltaZ);
 
             if (inputKey != null) {
                 handlePlayerInput(player, inputKey);
+            } else {
+                player.sendMessage("키 입력 감지되지 않음");
             }
         }
     }
 
-    // 플레이어의 좌클릭 및 우클릭 제한
-    @EventHandler
-    public void onPlayerInteract(PlayerInteractEvent event) {
-        Player player = event.getPlayer();
-        if (plugin.isInMinigame(player)) {
-            event.setCancelled(true);
-        }
-    }
+    // 수정된 getMovementKey 메서드
+    private String getMovementKey(Player player, double deltaX, double deltaZ) {
+        // 움직임 벡터 생성
+        Vector movementVector = new Vector(deltaX, 0, deltaZ);
 
-    @EventHandler
-    public void onSneak(PlayerToggleSneakEvent event) {
-        Player player = event.getPlayer();
-        if (plugin.isInMinigame(player)) {
-            event.setCancelled(true);
-        }
-    }
+        // 플레이어의 바라보는 방향(yaw)을 라디안으로 변환
+        double yaw = Math.toRadians(player.getLocation().getYaw());
 
-    // 움직임의 방향을 기반으로 입력된 키 추정
-    private String getMovementKey(double deltaX, double deltaZ) {
-        if (Math.abs(deltaX) > Math.abs(deltaZ)) {
-            if (deltaX > 0) {
-                return "D"; // 오른쪽 이동 (D 키)
-            } else if (deltaX < 0) {
-                return "A"; // 왼쪽 이동 (A 키)
-            }
-        } else {
-            if (deltaZ > 0) {
-                return "S"; // 뒤로 이동 (S 키)
-            } else if (deltaZ < 0) {
-                return "W"; // 앞으로 이동 (W 키)
-            }
+        // 플레이어의 로컬 좌표계에서의 전진 방향 벡터 계산
+        Vector forward = new Vector(-Math.sin(yaw), 0, Math.cos(yaw)).normalize();
+
+        // 왼쪽 방향 벡터 계산 (부호 수정)
+        Vector left = new Vector(forward.getZ(), 0, -forward.getX()).normalize();
+
+        // 움직임 벡터를 로컬 좌표계로 변환
+        double forwardDistance = movementVector.dot(forward);
+        double leftDistance = movementVector.dot(left);
+
+        // 임계값 설정
+        double threshold = 0.05;
+
+        // 전진/후진 감지
+        if (forwardDistance > threshold) {
+            return "W"; // 전진 (W 키)
+        } else if (forwardDistance < -threshold) {
+            return "S"; // 후진 (S 키)
         }
+
+        // 좌우 이동 감지
+        if (leftDistance > threshold) {
+            return "A"; // 좌측 이동 (A 키)
+        } else if (leftDistance < -threshold) {
+            return "D"; // 우측 이동 (D 키)
+        }
+
         return null; // 움직임이 없는 경우
     }
 
-    // 플레이어의 키 입력 처리
     private void handlePlayerInput(Player player, String inputKey) {
         PlayerMinigameData data = plugin.getPlayerMinigameData(player);
 
         if (data != null) {
+            // 입력 쿨다운 체크
+            long currentTime = System.currentTimeMillis();
+            long inputCooldown = 200; // 200밀리초 쿨다운 (0.2초)
+
+            if (currentTime - data.getLastInputTime() < inputCooldown) {
+                return;
+            }
+            data.setLastInputTime(currentTime);
+
             String expectedKey = data.getCurrentExpectedKey();
 
-            if (inputKey.equals(expectedKey)) {
+            int inputKeyValue = getKeyValue(inputKey);
+            int expectedKeyValue = getKeyValue(expectedKey);
+
+            if (inputKeyValue == expectedKeyValue && inputKeyValue != 0) {
                 data.incrementStageIndex();
 
                 if (data.isCompleted()) {
                     // 미니게임 성공 처리
                     plugin.removePlayerMinigameData(player);
                     giveResistanceBuff(player);
-                    player.sendMessage("§a미니게임에 성공하여 보상을 받았습니다!");
+                    player.sendMessage("§a패턴 성공!");
                 }
             } else {
                 // 미니게임 실패 처리
                 plugin.removePlayerMinigameData(player);
-                player.sendMessage("§c잘못된 키를 입력하여 미니게임이 종료되었습니다.");
+                player.sendMessage("§c패턴 실패!");
             }
         }
     }
 
-    // 저항 버프 부여
+    private int getKeyValue(String key) {
+        if (key == null) {
+            return 0;
+        }
+        switch (key.toUpperCase()) {
+            case "W":
+                return 1;
+            case "A":
+                return 2;
+            case "S":
+                return 3;
+            case "D":
+                return 4;
+            default:
+                return 0;
+        }
+    }
+
+    // 저항 버프 부여 (필요한 경우 구현)
     private void giveResistanceBuff(Player player) {
-        int durationInTicks = 100; // 5초 (1초 = 20틱)
-        int amplifier = 5; // 레벨 5 (레벨은 0부터 시작)
-        player.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, durationInTicks, amplifier));
+        // 저항 버프 부여 로직
+    }
+
+    @EventHandler
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        if (plugin.isInMinigame(player)) {
+            event.setCancelled(true);
+            player.sendMessage("미니게임 중에는 상호작용이 제한됩니다.");
+        }
     }
 }

@@ -5,10 +5,12 @@ import java.util.List;
 public class PlayerMinigameData {
     private int currentStageIndex;
     private List<String> keySequence;
+    private long lastInputTime;
 
     public PlayerMinigameData(List<String> keySequence) {
         this.currentStageIndex = 0;
         this.keySequence = keySequence;
+        this.lastInputTime = 0;
     }
 
     // 현재 진행 중인 스테이지 인덱스 반환
@@ -27,6 +29,14 @@ public class PlayerMinigameData {
             return keySequence.get(currentStageIndex);
         }
         return null;
+    }
+
+    public long getLastInputTime() {
+        return lastInputTime;
+    }
+
+    public void setLastInputTime(long lastInputTime) {
+        this.lastInputTime = lastInputTime;
     }
 
     // 미니게임 완료 여부 확인
