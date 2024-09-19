@@ -1,0 +1,7 @@
+name: Minigame
+version: '${project.version}'
+main: com.yd.minigame.Minigame
+api-version: '1.20'
+author: YD
+commands:
+  minigame:
