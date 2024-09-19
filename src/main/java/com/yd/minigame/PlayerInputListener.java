@@ -108,7 +108,7 @@ public class PlayerInputListener implements Listener {
     // 저항 버프 부여
     private void giveResistanceBuff(Player player) {
         int durationInTicks = 100; // 5초 (1초 = 20틱)
-        int amplifier = 9; // 레벨 10 (레벨은 0부터 시작)
+        int amplifier = 5; // 레벨 5 (레벨은 0부터 시작)
         player.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, durationInTicks, amplifier));
     }
 }

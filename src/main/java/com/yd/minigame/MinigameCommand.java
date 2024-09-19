@@ -15,7 +15,7 @@ public class MinigameCommand implements CommandExecutor {
 
     private final Minigame plugin;
     private final int TIME_LIMIT = 5; // 제한 시간 (초)
-    private final int TOTAL_STAGES = 4; // 총 단계 수
+    private final int TOTAL_STAGES = 8; // 총 단계 수
 
     public MinigameCommand(Minigame plugin) {
         this.plugin = plugin;
