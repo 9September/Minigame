@@ -6,18 +6,21 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.ChatColor;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.UUID;
 
 public class Minigame extends JavaPlugin {
 
     // 플레이어별 미니게임 데이터를 저장하는 맵
     private HashMap<UUID, PlayerMinigameData> playerMinigameDataMap = new HashMap<>();
+    private BukkitTask timerTask; // 타이머 태스크 참조 추가
 
     @Override
     public void onEnable() {
@@ -35,13 +38,15 @@ public class Minigame extends JavaPlugin {
         // 명령어 등록
         this.getCommand("minigame").setExecutor(new MinigameCommand(this));
 
-        // 서브타이틀 업데이트 및 타임아웃 처리용 타이머 시작
-        startTimerTask();
+        // 초기에는 타이머 태스크를 시작하지 않습니다.
     }
 
     @Override
     public void onDisable() {
         // 플러그인 비활성화 시 필요한 작업
+        if (timerTask != null && !timerTask.isCancelled()) {
+            timerTask.cancel();
+        }
     }
 
     // 플레이어의 미니게임 데이터 반환
@@ -70,7 +75,7 @@ public class Minigame extends JavaPlugin {
      * @param message 서브타이틀 메시지
      */
     public void sendSubtitle(Player player, String message) {
-        player.sendTitle("", message, 0, 200, 0); // fadeIn, stay, fadeOut ticks
+        player.sendTitle(" ", message, 0, 20, 0); // 제목을 공백으로 설정하고, 1초 동안 유지
     }
 
     /**
@@ -87,22 +92,31 @@ public class Minigame extends JavaPlugin {
         // 소리 재생
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
 
-        // 메시지 출력
-        player.sendMessage(ChatColor.AQUA + "저항 버프를 받았습니다!");
     }
 
     /**
      * 타이머 스케줄러 시작.
      * 매초 모든 미니게임 참가자의 남은 시간을 감소시키고, 시간 초과 시 미니게임을 실패로 처리.
      */
-    private void startTimerTask() {
-        new BukkitRunnable() {
+    public void startTimerTask() {
+        // 이미 타이머 태스크가 실행 중이면 중복으로 실행하지 않음
+        if (timerTask != null && !timerTask.isCancelled()) {
+            return;
+        }
+
+        timerTask = new BukkitRunnable() {
             @Override
             public void run() {
-                Iterator<HashMap.Entry<UUID, PlayerMinigameData>> iterator = playerMinigameDataMap.entrySet().iterator();
+                if (playerMinigameDataMap.isEmpty()) {
+                    this.cancel();
+                    timerTask = null;
+                    return;
+                }
+
+                Iterator<Map.Entry<UUID, PlayerMinigameData>> iterator = playerMinigameDataMap.entrySet().iterator();
 
                 while (iterator.hasNext()) {
-                    HashMap.Entry<UUID, PlayerMinigameData> entry = iterator.next();
+                    Map.Entry<UUID, PlayerMinigameData> entry = iterator.next();
                     UUID playerId = entry.getKey();
                     PlayerMinigameData data = entry.getValue();
 
@@ -121,17 +135,12 @@ public class Minigame extends JavaPlugin {
                     if (data.getRemainingTime() <= 0) {
                         // 미니게임 실패 처리 (시간 초과)
                         iterator.remove();
-                        player.sendMessage(ChatColor.RED + "시간 초과! 미니게임이 종료되었습니다.");
+                        player.sendMessage(ChatColor.RED + "시간 초과!");
                         // 실패 소리 재생
                         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 1.0f);
                         // 서브타이틀 초기화
-                        sendSubtitle(player, "");
+                        sendSubtitle(player, ""); // 서브타이틀 제거
                     }
-                }
-
-                // 모든 미니게임이 종료되었을 때 타이머 중지
-                if (playerMinigameDataMap.isEmpty()) {
-                    this.cancel();
                 }
             }
         }.runTaskTimer(this, 20L, 20L); // 1초마다 실행 (20틱 = 1초)

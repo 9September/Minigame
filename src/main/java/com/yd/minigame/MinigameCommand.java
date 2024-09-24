@@ -33,7 +33,7 @@ public class MinigameCommand implements CommandExecutor {
                     Player player = (Player) sender;
                     startMinigame(player);
                 } else {
-                    sender.sendMessage(ChatColor.RED + "콘솔에서는 플레이어를 지정하여 미니게임을 시작할 수 있습니다.");
+                    sender.sendMessage(ChatColor.RED + "콘솔에서는 플레이어를 지정하여 미니게임을 시작할 수 없습니다.");
                 }
                 return true;
             } else if (args.length == 2) {
@@ -47,7 +47,6 @@ public class MinigameCommand implements CommandExecutor {
                 startMinigame(target);
                 return true;
             } else {
-                sender.sendMessage(ChatColor.RED + "사용법: /minigame start [player]");
                 return true;
             }
         }
@@ -78,5 +77,8 @@ public class MinigameCommand implements CommandExecutor {
 
         // 초기 서브타이틀 전송
         plugin.sendSubtitle(player, ChatColor.RED + "남은 시간: " + data.getFormattedRemainingTime());
+
+        // 타이머 태스크 시작
+        plugin.startTimerTask();
     }
 }
