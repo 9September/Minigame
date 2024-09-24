@@ -1,5 +1,8 @@
 package com.yd.minigame;
 
+import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Sound;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -7,14 +10,13 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
 public class MinigameCommand implements CommandExecutor {
 
     private final Minigame plugin;
-    private final int TIME_LIMIT = 10; // 제한 시간 (초)
+    private final int TIME_LIMIT = 10; // 제한 시간 (초), 필요에 따라 조정
     private final int TOTAL_STAGES = 8; // 총 단계 수
 
     public MinigameCommand(Minigame plugin) {
@@ -25,12 +27,28 @@ public class MinigameCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (label.equalsIgnoreCase("minigame") && args.length > 0 && args[0].equalsIgnoreCase("start")) {
-            if (sender instanceof Player) {
-                Player player = (Player) sender;
-                startMinigame(player);
+            if (args.length == 1) {
+                // /minigame start
+                if (sender instanceof Player) {
+                    Player player = (Player) sender;
+                    startMinigame(player);
+                } else {
+                    sender.sendMessage(ChatColor.RED + "콘솔에서는 플레이어를 지정하여 미니게임을 시작할 수 있습니다.");
+                }
+                return true;
+            } else if (args.length == 2) {
+                // /minigame start <player>
+                String targetName = args[1];
+                Player target = Bukkit.getPlayerExact(targetName);
+                if (target == null) {
+                    sender.sendMessage(ChatColor.RED + "플레이어를 찾을 수 없습니다: " + targetName);
+                    return true;
+                }
+                startMinigame(target);
+                sender.sendMessage(ChatColor.GREEN + target.getName() + "에게 미니게임을 시작했습니다.");
                 return true;
             } else {
-                sender.sendMessage("이 명령어는 플레이어만 사용할 수 있습니다.");
+                sender.sendMessage(ChatColor.RED + "사용법: /minigame start [player]");
                 return true;
             }
         }
@@ -40,6 +58,7 @@ public class MinigameCommand implements CommandExecutor {
     // 미니게임 시작 메서드
     private void startMinigame(Player player) {
         if (plugin.isInMinigame(player)) {
+            player.sendMessage(ChatColor.RED + "이미 미니게임이 진행 중입니다.");
             return;
         }
 
@@ -54,20 +73,14 @@ public class MinigameCommand implements CommandExecutor {
             keySequence.add(possibleKeys[index]);
         }
 
-        // 플레이어의 미니게임 데이터 설정
-        PlayerMinigameData data = new PlayerMinigameData(keySequence);
+        // 플레이어의 미니게임 데이터 설정, with remainingTime = TIME_LIMIT
+        PlayerMinigameData data = new PlayerMinigameData(keySequence, TIME_LIMIT);
         plugin.setPlayerMinigameData(player, data);
 
-        // 제한 시간 설정
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (plugin.isInMinigame(player)) {
-                    // 시간 초과 처리
-                    plugin.removePlayerMinigameData(player);
-                    player.sendMessage("§c시간 초과!");
-                }
-            }
-        }.runTaskLater(plugin, TIME_LIMIT * 20); // TIME_LIMIT 초 후 실행
+        // 초기 서브타이틀 전송
+        plugin.sendSubtitle(player, ChatColor.RED + "남은 시간: " + data.getFormattedRemainingTime());
+
+        // 미니게임 시작 메시지
+        player.sendMessage(ChatColor.GREEN + "미니게임이 시작되었습니다! 화면에 표시되는 키를 순서대로 입력하세요.");
     }
 }

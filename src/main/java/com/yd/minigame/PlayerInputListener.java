@@ -1,11 +1,15 @@
 package com.yd.minigame;
 
+import org.bukkit.ChatColor;
+import org.bukkit.Sound;
+import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.EventHandler;
-import org.bukkit.entity.Player;
 import org.bukkit.Location;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
 public class PlayerInputListener implements Listener {
@@ -40,7 +44,7 @@ public class PlayerInputListener implements Listener {
             if (inputKey != null) {
                 handlePlayerInput(player, inputKey);
             } else {
-                player.sendMessage("키 입력 감지되지 않음");
+                player.sendMessage(ChatColor.YELLOW + "키 입력 감지되지 않음");
             }
         }
     }
@@ -89,7 +93,7 @@ public class PlayerInputListener implements Listener {
         if (data != null) {
             // 입력 쿨다운 체크
             long currentTime = System.currentTimeMillis();
-            long inputCooldown = 200; // 200밀리초 쿨다운 (0.2초)
+            long inputCooldown = 500; // 500밀리초 쿨다운 (0.5초)
 
             if (currentTime - data.getLastInputTime() < inputCooldown) {
                 return;
@@ -104,16 +108,27 @@ public class PlayerInputListener implements Listener {
             if (inputKeyValue == expectedKeyValue && inputKeyValue != 0) {
                 data.incrementStageIndex();
 
+                // 소리 재생
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
+
                 if (data.isCompleted()) {
                     // 미니게임 성공 처리
                     plugin.removePlayerMinigameData(player);
+                    plugin.giveResistanceBuff(player);
+                    player.sendMessage(ChatColor.GREEN + "패턴 성공!");
                     giveResistanceBuff(player);
-                    player.sendMessage("§a패턴 성공!");
+                    // 서브타이틀 초기화
+                    plugin.sendSubtitle(player, "");
                 }
+                // 남은 시간을 초기화하지 않음
             } else {
                 // 미니게임 실패 처리
                 plugin.removePlayerMinigameData(player);
-                player.sendMessage("§c패턴 실패!");
+                player.sendMessage(ChatColor.RED + "패턴 실패!");
+                // 실패 소리 재생
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 1.0f);
+                // 서브타이틀 초기화
+                plugin.sendSubtitle(player, "");
             }
         }
     }
@@ -136,9 +151,9 @@ public class PlayerInputListener implements Listener {
         }
     }
 
-    // 저항 버프 부여 (필요한 경우 구현)
     private void giveResistanceBuff(Player player) {
-        // 저항 버프 부여 로직
+        PotionEffect resistance = new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 200, 5, false, false);
+        player.addPotionEffect(resistance);
     }
 
     @EventHandler
@@ -146,7 +161,7 @@ public class PlayerInputListener implements Listener {
         Player player = event.getPlayer();
         if (plugin.isInMinigame(player)) {
             event.setCancelled(true);
-            player.sendMessage("미니게임 중에는 상호작용이 제한됩니다.");
+            player.sendMessage(ChatColor.RED + "미니게임 중에는 상호작용이 제한됩니다.");
         }
     }
 }
