@@ -70,7 +70,7 @@ public class Minigame extends JavaPlugin {
      * @param message 서브타이틀 메시지
      */
     public void sendSubtitle(Player player, String message) {
-        player.sendTitle("", message, 0, 20, 0); // fadeIn, stay, fadeOut ticks
+        player.sendTitle("", message, 0, 200, 0); // fadeIn, stay, fadeOut ticks
     }
 
     /**

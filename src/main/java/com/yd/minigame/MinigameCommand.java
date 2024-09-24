@@ -45,7 +45,6 @@ public class MinigameCommand implements CommandExecutor {
                     return true;
                 }
                 startMinigame(target);
-                sender.sendMessage(ChatColor.GREEN + target.getName() + "에게 미니게임을 시작했습니다.");
                 return true;
             } else {
                 sender.sendMessage(ChatColor.RED + "사용법: /minigame start [player]");
@@ -58,7 +57,7 @@ public class MinigameCommand implements CommandExecutor {
     // 미니게임 시작 메서드
     private void startMinigame(Player player) {
         if (plugin.isInMinigame(player)) {
-            player.sendMessage(ChatColor.RED + "이미 미니게임이 진행 중입니다.");
+            player.sendMessage(ChatColor.RED + "이미 패턴이 진행 중입니다.");
             return;
         }
 
@@ -79,8 +78,5 @@ public class MinigameCommand implements CommandExecutor {
 
         // 초기 서브타이틀 전송
         plugin.sendSubtitle(player, ChatColor.RED + "남은 시간: " + data.getFormattedRemainingTime());
-
-        // 미니게임 시작 메시지
-        player.sendMessage(ChatColor.GREEN + "미니게임이 시작되었습니다! 화면에 표시되는 키를 순서대로 입력하세요.");
     }
 }

@@ -41,6 +41,7 @@ public class MinigamePlaceholderExpansion extends PlaceholderExpansion {
             return String.valueOf(getKeyValue(data.getCurrentExpectedKey()));
         }
 
+
         return null;
     }
 
