@@ -7,12 +7,14 @@ public class PlayerMinigameData {
     private List<String> keySequence;
     private long lastInputTime;
     private int remainingTime; // 남은 시간 (초 단위)
+    private MinigameType minigameType;
 
-    public PlayerMinigameData(List<String> keySequence, int timeLimit) {
+    public PlayerMinigameData(List<String> keySequence, int timeLimit, MinigameType minigameType) {
         this.currentStageIndex = 0;
         this.keySequence = keySequence;
         this.lastInputTime = 0;
         this.remainingTime = timeLimit;
+        this.minigameType = minigameType;
     }
 
     // 현재 진행 중인 스테이지 인덱스 반환
@@ -31,6 +33,10 @@ public class PlayerMinigameData {
             return keySequence.get(currentStageIndex);
         }
         return null;
+    }
+
+    public MinigameType getMinigameType() {
+        return minigameType;
     }
 
     public long getLastInputTime() {

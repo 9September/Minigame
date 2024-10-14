@@ -38,23 +38,25 @@ public class MinigamePlaceholderExpansion extends PlaceholderExpansion {
             if (data == null || data.getCurrentExpectedKey() == null) {
                 return "0";
             }
-            return String.valueOf(getKeyValue(data.getCurrentExpectedKey()));
+            return String.valueOf(getKeyValue(data.getCurrentExpectedKey(), data.getMinigameType()));
         }
-
 
         return null;
     }
 
-    private int getKeyValue(String key) {
-        switch (key) {
+    private int getKeyValue(String key, MinigameType type) {
+        if (key == null) {
+            return 0;
+        }
+        switch (key.toUpperCase()) {
             case "W":
-                return 1;
+                return type == MinigameType.TYPE1 ? 1 : 5;
             case "A":
-                return 2;
+                return type == MinigameType.TYPE1 ? 2 : 6;
             case "S":
-                return 3;
+                return type == MinigameType.TYPE1 ? 3 : 7;
             case "D":
-                return 4;
+                return type == MinigameType.TYPE1 ? 4 : 8;
             default:
                 return 0;
         }

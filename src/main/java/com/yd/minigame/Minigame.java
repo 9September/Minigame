@@ -37,7 +37,6 @@ public class Minigame extends JavaPlugin {
 
         // 명령어 등록
         this.getCommand("minigame").setExecutor(new MinigameCommand(this));
-
         // 초기에는 타이머 태스크를 시작하지 않습니다.
     }
 
@@ -78,21 +77,6 @@ public class Minigame extends JavaPlugin {
         player.sendTitle(" ", message, 0, 20, 0); // 제목을 공백으로 설정하고, 1초 동안 유지
     }
 
-    /**
-     * 플레이어에게 저항 버프를 부여하는 메서드
-     * @param player 버프를 받을 플레이어
-     */
-    public void giveResistanceBuff(Player player) {
-        int duration = 200; // 10초 (틱 단위)
-        int amplifier = 0;  // 레벨 1
-
-        PotionEffect resistanceEffect = new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, duration, amplifier, false, false);
-        player.addPotionEffect(resistanceEffect);
-
-        // 소리 재생
-        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
-
-    }
 
     /**
      * 타이머 스케줄러 시작.
